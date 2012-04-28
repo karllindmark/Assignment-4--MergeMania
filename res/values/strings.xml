@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    This file is part of Assignment 4: Spheres
+
+    BF3 Battlelog is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    BF3 Battlelog is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+-->
+
+<resources>
+	<string name="app_name">Spheres</string>
+    <string name="mode_ready">Spheres\nTouch to Play</string>
+	<string name="mode_pause">Paused\nTouch to Resume</string>
+	<string name="mode_lose">Game Over\nTouch to play</string>
+	
+	<string name="message_stopped">Stopped</string>
+
+    <string name="info_top_lives">{num} lives left</string> 
+
+    <string name="info_top_score">Score: {score}</string> 
+
+    <string name="info_gameover">Game over!</string> 
+
+    <string name="info_gameover_restart">Tap to restart</string> 
+
+    <string name="info_main_start">Start game</string>
+</resources>

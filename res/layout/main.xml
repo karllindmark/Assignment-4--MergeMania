@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    This file is part of Assignment 4: Spheres
+
+    BF3 Battlelog is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    BF3 Battlelog is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+-->
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:background="#EEEEEE"
+  	android:onClick="onClick"
+>
+	<LinearLayout    
+        android:layout_width="wrap_content"
+    	android:layout_height="wrap_content"
+    	android:orientation="vertical"
+    	android:layout_centerInParent="true"
+    	android:gravity="center"
+    >
+	    <TextView 
+			android:id="@+id/text_app"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"    
+			android:text="@string/app_name"
+			android:textSize="40sp"
+			android:textColor="#333333"
+	    />
+	    <TextView
+	        android:id="@+id/text_tap"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:text="Tap anywhere to start" 
+	        android:onClick="onClick"
+	        android:padding="10dp"
+	        android:gravity="center"
+	        android:textColor="#333333"
+	        android:textSize="15sp"
+	        android:textStyle="bold"/>	
+	</LinearLayout>
+</RelativeLayout>
