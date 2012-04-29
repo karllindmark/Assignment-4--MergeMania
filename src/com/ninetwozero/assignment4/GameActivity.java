@@ -54,8 +54,6 @@ public class GameActivity extends Activity {
         gameSurfaceView = (GameSurfaceView) findViewById(R.id.gamesurfaceview);
         gameThread = gameSurfaceView.getThread();
         gameSurfaceView.setTextMessage((TextView) findViewById(R.id.text_message));
-        gameSurfaceView.setTextScore((TextView) findViewById(R.id.text_score));
-        gameSurfaceView.setTextLives((TextView) findViewById(R.id.text_lives));
         gameSurfaceView.setViewOverlay(viewOverlay = findViewById(R.id.window_overlay));
 
         // Do we have an instance?

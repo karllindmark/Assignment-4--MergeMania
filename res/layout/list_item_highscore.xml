@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    This file is part of Assignment 4: Spheres
+
+    BF3 Battlelog is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    BF3 Battlelog is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+-->
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent" >
+
+    <TextView
+        android:id="@+id/text_position"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" 
+        android:text="1"
+        android:textSize="30dp"
+        android:paddingRight="5dp"
+        android:layout_centerVertical="true"
+    />
+    <TextView
+        android:id="@+id/text_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="ninetwozero"
+        android:textSize="24sp"
+        android:layout_toRightOf="@id/text_position"
+        android:textColor="#222222"
+    />
+    <TextView
+        android:id="@+id/text_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="{time} seconds"
+        android:layout_toRightOf="@id/text_position"
+        android:layout_below="@id/text_name"
+        android:textColor="#222222"
+    />
+    
+</RelativeLayout>

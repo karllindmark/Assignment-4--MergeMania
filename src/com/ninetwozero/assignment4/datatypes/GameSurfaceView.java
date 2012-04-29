@@ -20,27 +20,29 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.RandomAccess;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.Point;
 import android.graphics.Rect;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.TextView;
 
+import com.ninetwozero.assignment4.GameOverActivity;
 import com.ninetwozero.assignment4.R;
-import com.ninetwozero.assignment4.misc.Constants;
 
 public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callback {
 
@@ -48,37 +50,27 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
     private Context context;
     private Handler handler;
     private TextView textMessage;
-    private TextView textScore;
-    private TextView textLives;
     private View viewOverlay;
 
     // Event-related
     private final int TOUCHPOINT_X = 0;
     private final int TOUCHPOINT_Y = 1;
 
-    // Points
-    private final int POINTS_DISABLE = 1;
-    private final int POINTS_DESTROY = 2;
-    private final int POINTS_DEATH = -3;
-
     // Defaults
-    private final int DEFAULT_SPACER_BLOCKS = 20;
-    private final int DEFAULT_NUM_BLOCKS = 5;
     private final int DEFAULT_WIDTH = 540;
     private final int DEFAULT_HEIGHT = 960;
-    private final int DEFAULT_NUM_LIVES = 3;
 
     // Touch related
     private double[] touchPoints;
     private double[] touchPointsPrevious;
-    private List<LineData> lines;
+    private List<Point> points;
+    private Path path;
     private int stateTouch;
-    
+
     // Sphere-related
     private int numSpheres;
-    private int numCapturedSpheres;
     private List<Ball> balls;
-    
+
     // Scaling related
     private double scaleModifierX;
     private double scaleModifierY;
@@ -86,14 +78,16 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
     private int scaledRadiusBall;
 
     // Scoring related
-    private long numPoints;
-    private long numRounds;
-    private int numLives;
+    private long timeStart;
     private int viewMaxWidth;
     private int viewMaxHeight;
 
+    // Sound
+    private MediaPlayer soundLine;
+    private MediaPlayer soundMerge;
+
     private Map<Integer, Integer> ballMap;
-    
+
     /** The thread that actually draws the animation */
     private GameThread thread;
 
@@ -113,7 +107,7 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
 
         // Let's get the touch points
         touchPoints = new double[2];
-        lines = new CopyOnWriteArrayList<LineData>();
+        points = new CopyOnWriteArrayList<Point>();
         balls = new ArrayList<Ball>();
 
         // create thread only; it's started in surfaceCreated()
@@ -123,10 +117,6 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
 
                 textMessage.setVisibility(m.getData().getInt("viz"));
                 textMessage.setText(m.getData().getString("text"));
-                textScore.setText(context.getString(R.string.info_top_score).replace("{score}",
-                        m.getData().getLong("score") + ""));
-                textLives.setText(context.getString(R.string.info_top_lives).replace("{num}",
-                        m.getData().getInt("lives") + ""));
                 viewOverlay.setVisibility(m.getData().getInt("overlay", View.INVISIBLE));
 
             }
@@ -141,7 +131,14 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
         // Setup the width/height
         viewMaxWidth = 0;
         viewMaxHeight = 0;
-        
+
+        // Set the MediaPlayer
+        soundLine = MediaPlayer.create(c, R.raw.line);
+        soundMerge = MediaPlayer.create(c, R.raw.merge);
+
+        // Start them off to remove the lag
+        soundLine.start();
+        soundMerge.start();
 
     }
 
@@ -153,49 +150,54 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
         // Init the scaled values
         scaleModifierX = ((double) viewMaxWidth) / DEFAULT_WIDTH;
         scaleModifierY = ((double) viewMaxHeight) / DEFAULT_HEIGHT;
-        scaledSpacing = (int) (DEFAULT_SPACER_BLOCKS * scaleModifierX);
-        scaledRadiusBall = (int) (((Ball.DEFAULT_RADIUS * scaleModifierX)+(Ball.DEFAULT_RADIUS * scaleModifierY))/2);        
-        
-        //Determine if screen is large enough for two players
-        numSpheres = 12;
-        
+        scaledRadiusBall = (int) (((Ball.DEFAULT_RADIUS * scaleModifierX) + (Ball.DEFAULT_RADIUS * scaleModifierY)) / 2);
+
+        // Determine if screen is large enough for two players
+        numSpheres = 20;
+
         // Data
         ballMap = new HashMap<Integer, Integer>();
-        
+
+        // Init the path
+        path = new Path();
+
     }
-    
 
     /*
      * Method to init the Spheres
      */
     public void initSpheres(boolean restart) {
-        
+
         // Are there any blocks?
-        if ( !restart) {
+        if (!restart) {
             return;
         }
-        
+
         // We need a random generator
         Random generator = new Random();
 
+        // No room for balls
+        balls.clear();
+
         // Iterate and create!
         for (int count = 0; count < numSpheres; count++) {
-            
+
             // Randomize an id
-            int typeId = generator.nextInt(4);
-            
+            int typeId = generator.nextInt(5);
+
             // Use it on the ball
-            balls.add( new Ball((int)(viewMaxWidth*Math.random()), (int)(viewMaxHeight*Math.random()), typeId ) );
-            
+            balls.add(new Ball((int) (viewMaxWidth * Math.random()), (int) (viewMaxHeight * Math
+                    .random()), typeId));
+
             // Also, put it in the ballMap to keep track
-            if( ballMap.containsKey(typeId) ) {
+            if (ballMap.containsKey(typeId)) {
 
                 ballMap.put(typeId, ballMap.get(typeId) + 1);
-                
+
             } else {
-                
+
                 ballMap.put(typeId, 1);
-                
+
             }
 
         }
@@ -227,22 +229,6 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
      */
     public void setTextMessage(TextView tv) {
         textMessage = tv;
-    }
-
-    /*
-     * Method to set the TextView for the score
-     * @param TextView The referenced TextView
-     */
-    public void setTextScore(TextView tv) {
-        textScore = tv;
-    }
-
-    /*
-     * Method to set the TextView for the # of lives
-     * @param TextView The referenced TextView
-     */
-    public void setTextLives(TextView tv) {
-        textLives = tv;
     }
 
     /*
@@ -280,7 +266,7 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
 
         // Let's generate teh scaled values
         initValues();
-        
+
         // Generate the blocks
         initSpheres(true);
 
@@ -291,9 +277,9 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
             thread.setRunning(true);
             thread.start();
             thread.doStart();
-            
+
         } else {
-            
+
             if (!thread.isRunning()) {
 
                 thread.setRunning(true);
@@ -332,35 +318,43 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
         // Get the action
         int action = event.getAction();
         stateTouch = action;
-        
+
         // Save the "point of impact"
         touchPointsPrevious = touchPoints.clone();
         touchPoints[TOUCHPOINT_X] = event.getX();
         touchPoints[TOUCHPOINT_Y] = event.getY();
 
-        // Check what's up
+        // Act upon the action
         if (action == MotionEvent.ACTION_DOWN) {
 
-            /* START OF LINE */
-            /* STORE INITIAL LINE IN ARRAYLIST VIA METHOD .addLine() => List<LineData> */
+            // Init a line
+            points.add(new Point((int) touchPoints[TOUCHPOINT_X], (int) touchPoints[TOUCHPOINT_Y]));
+            path.moveTo((int) touchPoints[TOUCHPOINT_X], (int) touchPoints[TOUCHPOINT_Y]);
 
-        } else if( action == MotionEvent.ACTION_MOVE) {
-            
-            /* STORE LINES IN ARRAYLIST VIA METHOD .addLine() => List<LineData> */
-            lines.add(new LineData(touchPointsPrevious[TOUCHPOINT_X], touchPointsPrevious[TOUCHPOINT_Y], touchPoints[TOUCHPOINT_X], touchPoints[TOUCHPOINT_Y]));
-            
+        } else if (action == MotionEvent.ACTION_MOVE) {
+
+            // We need to validate that they don't cross over
+            Point last = new Point((int) touchPointsPrevious[TOUCHPOINT_X],
+                    (int) touchPointsPrevious[TOUCHPOINT_Y]);
+
+            // Add the points (index = 1)
+            points.add(last);
+            path.lineTo(last.x, last.y);
 
         } else if (action == MotionEvent.ACTION_UP) {
 
-            /* CHECK IF THE LINE IS INTERSECTING AT THE CORRECT PLACE */
-            if( lines.size() > 0 ) {
-                
-                LineData line = lines.get(0);
-                lines.add( new LineData(line.getStartX(), line.getStartY(), touchPointsPrevious[TOUCHPOINT_X], touchPointsPrevious[TOUCHPOINT_Y]) );
-            
-            }           
-            /* ITERATION OVER List<LineData> here */
-            
+            // Let's make that sound ring!
+            soundLine.start();
+
+            // We need to close off the path
+            if (points.size() > 0) {
+
+                Point point = points.get(0);
+                points.add(new Point(point.x, point.y));
+                path.close();
+
+            }
+
         }
 
         return true;
@@ -378,7 +372,6 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
         private Handler mHandler;
         private int mMode;
         private boolean running;
-        private boolean clear;
 
         /** Handle to the surface manager object we interact with */
         private SurfaceHolder mSurfaceHolder;
@@ -409,15 +402,17 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
             paintReset = new Paint();
             paintBackground = new Paint();
             paintLine = new Paint();
-            
+
             // Set the background color
             paintReset.setARGB(255, 255, 255, 255);
             paintBackground.setARGB(16, 255, 255, 255);
             paintLine.setARGB(255, 0, 0, 0);
-            
+
+            // Set it as stroke
+            paintLine.setStyle(Paint.Style.STROKE);
+
             // Misc
             rectClear = new Rect();
-            clear= true;
 
         }
 
@@ -430,7 +425,7 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
                 // Set the direction
                 if (mMode != STATE_PAUSE) {
 
-                    //Was the game paused?
+                    // Was the game paused?
 
                 }
 
@@ -457,11 +452,6 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
             synchronized (mSurfaceHolder) {
                 setState(STATE_PAUSE);
 
-                /*
-                 * TODO: RESTORE STATE? BALL POSITION, PADDLE POSITION, # of
-                 * blocks left + positions
-                 */
-                numPoints = savedState.getLong("numPoints");
             }
         }
 
@@ -497,13 +487,6 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
          */
         public Bundle saveState(Bundle map) {
 
-            synchronized (mSurfaceHolder) {
-
-                if (map != null) {
-
-                    /* TODO: SAVE STATE IN MAP? */
-                }
-            }
             return map;
         }
 
@@ -533,30 +516,17 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
 
                 if (mMode == STATE_RUNNING) {
 
+                    timeStart = System.currentTimeMillis();
                     visibilityOverlay = View.GONE;
 
                 } else if (mMode == STATE_WIN) {
 
-                    // Woo
-                    numRounds++;
+                    // Calculate how long time it took
+                    double timeElapsed = (System.currentTimeMillis() - timeStart) / 1000.0;
 
-                    // Clear the counter
-                    numCapturedSpheres = 0;
-
-                    // Re-init the blocks
-                    initSpheres(true);
-
-                    visibilityOverlay = View.VISIBLE;
-                    str = "ROUND COMPLETED.\nTAP TO CONTINUE";
-
-                } else if (mMode == STATE_LOSE) {
-
-                    // Let's set the final attributes
-                    numPoints += POINTS_DEATH;
-                    
-                    //Stop the thread
-                    running = false;
-                    
+                    // Go the the end
+                    context.startActivity(new Intent(context, GameOverActivity.class).putExtra(
+                            "time", timeElapsed));
                     ((Activity) context).finish();
 
                 } else if (mMode == STATE_PAUSE) {
@@ -570,7 +540,6 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
                     visibilityOverlay = View.VISIBLE;
 
                 }
-                b.putLong("score", numPoints);
                 b.putString("text", str);
                 b.putInt("viz", !str.equals("") ? View.VISIBLE : View.GONE);
                 b.putInt("overlay", visibilityOverlay);
@@ -624,19 +593,20 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
             canvas.drawRect(rectClear, paintBackground);
 
             /* Draw lines. */
-            for( LineData line : lines ) {
+            canvas.drawPath(path, paintLine);
 
-                canvas.drawLine( (float)line.getStartX(), (float)line.getStartY(), (float)line.getEndX(), (float)line.getEndY(), paintLine);
-            
-            }
-            
             /* Draw balls */
-            for( Ball ball : balls ) {
+            for (Ball ball : balls) {
 
-                canvas.drawCircle(ball.getPositionX(), ball.getPositionY(), ball.getRadius(), ball.getPaint());
-        
+                if (ball.isEnabled()) {
+
+                    canvas.drawCircle(ball.getPositionX(), ball.getPositionY(), ball.getRadius(),
+                            ball.getPaint());
+
+                }
+
             }
-            
+
         }
 
         /*
@@ -644,75 +614,129 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
          */
         private void calculateGameplay() {
 
-            /* TODO: WIN CONDITION */
-            if ( false ) {
-
-                // Set the state
-                setState(STATE_WIN);
-                return;
-            }
-            
             // Iterate over the balls
-            for( Ball ball : balls ) {        
-                
+            for (Ball ball : balls) {
+
                 // Should we turn around X-wise?
-                if( Math.random() > 0.95) {
-                    
+                if (Math.random() > 0.99) {
+
                     ball.toggleDirectionX();
-                    
+
                 }
 
                 // Should we turn around Y-wise?
-                if( Math.random() > 0.95) {
-                    
+                if (Math.random() > 0.99) {
+
                     ball.toggleDirectionY();
-                    
+
                 }
-                
+
                 // Do the actual move
-                ball.move(viewMaxWidth, viewMaxHeight);
-                
+                ball.move(0, 0, viewMaxWidth, viewMaxHeight);
+
             }
-            
+
             // Let's handle the balls
-            if( stateTouch == MotionEvent.ACTION_UP ) {
-                
-                if( lines.size() > 0 ) {
-                    
-                    // First thing's first - we need to check if we have any intersections
-                    for( Ball ball : balls ) {
-                        
-                        int numIntersects = ball.isIntersecting(lines);
-                        if( numIntersects > 0 ) {
-    
-                            Log.d(Constants.DEBUG_TAG, "number of intersects is => " + numIntersects);
-                            Log.d(Constants.DEBUG_TAG, "type is => " + ball.getType());
-                            
+            if (stateTouch == MotionEvent.ACTION_UP) {
+
+                if (balls.size() > 0) {
+
+                    // Create the Polygon & init an array
+                    Polygon polygon = new Polygon(points);
+                    List<Ball> selectedBalls = new ArrayList<Ball>();
+
+                    // Init the vital variables
+                    int foundType = -1;
+                    int counterSame = 0;
+
+                    // First thing's first - we need to check if we have any
+                    // intersections
+                    for (Ball ball : balls) {
+
+                        if (polygon.contains(new Point(ball.getPositionX(), ball.getPositionY()))) {
+
+                            if (foundType == -1) {
+
+                                foundType = ball.getType();
+                                counterSame = 1;
+                                selectedBalls.add(ball);
+
+                            } else if (foundType == ball.getType()) {
+
+                                counterSame++;
+                                selectedBalls.add(ball);
+
+                            } else if (foundType != ball.getType()) {
+
+                                counterSame = 0;
+                                break;
+
+                            }
+
                         }
 
                     }
-                    lines.clear();
-                    
+
+                    // Let's validate the results
+                    if (counterSame > 1) {
+
+                        // Init
+                        int size = 0;
+                        int xTot = 0, yTot = 0;
+                        int numSelected = selectedBalls.size();
+
+                        // Merge sound!
+                        soundMerge.start();
+
+                        // Iterate over the balls, removing them as needed
+                        for (int i = 0; i < numSelected; i++) {
+
+                            // Get the ball
+                            Ball b = selectedBalls.get(i);
+
+                            // Get the data from it
+                            size += b.getSize();
+                            xTot += b.getPositionX();
+                            yTot += b.getPositionY();
+
+                            // Remove the ball
+                            balls.remove(b);
+
+                        }
+
+                        // We need to add a bigger ball if there's >0 left
+                        int numLeft = ballMap.get(foundType);
+
+                        // Kids, don't try this at home.
+                        if ((numLeft - (counterSame - 1)) == 1) {
+
+                            setState(STATE_WIN);
+
+                        } else {
+
+                            // Deincrement the counter
+                            ballMap.put(foundType, numLeft - (counterSame - 1));
+
+                            // Create a new ball
+                            Ball b = new Ball(xTot / numSelected, yTot / numSelected, foundType);
+                            b.setSize(size);
+                            b.setRadius(Ball.DEFAULT_RADIUS * size);
+                            balls.add(b);
+
+                        }
+
+                    }
+
+                    points.clear();
+                    path.reset();
+                    stateTouch = MotionEvent.ACTION_CANCEL;
+
                 }
-                
+
             }
-            
-            
+
         }
 
-
-        /*
-         * Method to add an element to the array of LineData
-         * @param LineData The line to add
-         */
-        
-        public void addLine(LineData l) {
-            
-            lines.add(l);
-            
-        }
-
-        
         /*
          * Method to get the running flag
          * @return boolean Whether or not it's running

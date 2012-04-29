@@ -14,27 +14,37 @@
 
 package com.ninetwozero.assignment4;
 
-import android.app.Activity;
+import android.app.ListActivity;
+import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.ninetwozero.assignment4.adapters.HighscoreListAdapter;
 import com.ninetwozero.assignment4.misc.Constants;
+import com.ninetwozero.assignment4.misc.SQLiteManager;
 
-public class GameOverActivity extends Activity {
+public class GameOverActivity extends ListActivity {
 
     // Attributes
-    private long score;
-    private long gameRounds;
-    private long paddleHits;
+    private SQLiteManager sqlite;
+    private LayoutInflater layoutInflater;
+    private double time;
+    private int tapCounter = 2;
 
     // Elements
-    private TextView textScore;
+    private ListView listView;
+    private EditText textName;
+    private TextView textTime;
+    private Button buttonSave;
 
     /*
      * Standard onCreate() that initiates the GameOverActivity
@@ -54,31 +64,41 @@ public class GameOverActivity extends Activity {
         // Set the content view
         setContentView(R.layout.game_over);
 
-        // Set the TextView
-        textScore = (TextView) findViewById(R.id.text_score);
+        // Get important stuff
+        sqlite = new SQLiteManager(this);
+        layoutInflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+
+        // Get the elements
+        listView = getListView();
+        textName = (EditText) findViewById(R.id.input_name);
+        textTime = (TextView) findViewById(R.id.text_time);
+        buttonSave = (Button) findViewById(R.id.button_save);
+
+        // Remove the list divider
+        listView.setDividerHeight(0);
 
         // Get the score
-        score = getIntent().getLongExtra("score", 0);
+        time = getIntent().getDoubleExtra("time", 0);
 
         // Populate the textfield
-        textScore.setText(getString(R.string.info_top_score).replace("{score}", score + ""));
+        textTime.setText(getString(R.string.info_top_time).replace("{time}", time + ""));
 
-        // Update SP & commit
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        SharedPreferences.Editor spEditor = sharedPreferences.edit();
-        spEditor.putLong(Constants.SP_LIFETIME_SCORE,
-                sharedPreferences.getLong(Constants.SP_LIFETIME_SCORE, 0) + score);
-        spEditor.putLong(Constants.SP_LIFETIME_ROUNDS,
-                sharedPreferences.getLong(Constants.SP_LIFETIME_ROUNDS, 0) + gameRounds);
-        spEditor.putLong(Constants.SP_LIFETIME_PADDLE_HITS,
-                sharedPreferences.getLong(Constants.SP_LIFETIME_PADDLE_HITS, 0) + paddleHits);
-        spEditor.putLong(Constants.SP_LIFETIME_LOSSES,
-                sharedPreferences.getLong(Constants.SP_LIFETIME_LOSSES, 0) + 1);
-        spEditor.commit();
+        // Let's populate the listview too
+        try {
+
+            listView.setAdapter(new HighscoreListAdapter(this, sqlite.selectAll("Highscore"),
+                    layoutInflater));
+
+        } catch (Exception ex) {
+
+            Toast.makeText(this, ex.getMessage(), Toast.LENGTH_SHORT).show();
+
+        }
     }
 
     /*
-     * onClick handler for the R.id.root (as specified in xml)
+     * onClick handler for the R.id.root (as specified in xml) &
+     * R.id.button_save
      * @param View The clicked view
      */
 
@@ -86,8 +106,54 @@ public class GameOverActivity extends Activity {
 
         if (v.getId() == R.id.root) {
 
-            startActivity(new Intent(this, GameActivity.class));
-            finish();
+            if (--tapCounter <= 0) {
+
+                sqlite.close();
+                startActivity(new Intent(this, GameActivity.class));
+                finish();
+
+            }
+
+        } else if (v.getId() == R.id.button_save) {
+
+            // Get the name
+            String name = textName.getText().toString();
+            if (!name.equals("")) {
+
+                try {
+
+                    // Let's get the result and validate it
+                    long result = sqlite.insert("Highscore", new String[] {
+                            "name", "time"
+                    }, new String[] {
+                            name, time + ""
+                    });
+                    if (result > 0) {
+
+                        textName.setVisibility(View.GONE);
+                        buttonSave.setVisibility(View.GONE);
+                        ((HighscoreListAdapter) listView.getAdapter()).setCursor(sqlite
+                                .selectAll(Constants.SQLITE_TABLE));
+
+                    } else {
+
+                        Toast.makeText(this, "Highscore could not be saved.", Toast.LENGTH_SHORT)
+                                .show();
+
+                    }
+
+                } catch (Exception ex) {
+
+                    Toast.makeText(this, ex.getMessage(), Toast.LENGTH_SHORT).show();
+
+                }
+
+            } else {
+
+                Toast.makeText(this, "Please enter your name.", Toast.LENGTH_SHORT).show();
+
+            }
+
         }
 
     }

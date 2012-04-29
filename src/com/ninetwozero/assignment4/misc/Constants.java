@@ -17,13 +17,12 @@ package com.ninetwozero.assignment4.misc;
 public class Constants {
 
     // Attributes
-    public final static String DEBUG_TAG = "com.ninetwozero.assignment3";
+    public final static String DEBUG_TAG = "com.ninetwozero.assignment4";
 
-    // SharedPreferences
-    public final static String SP_LIFETIME_SCORE = "lifetime_score";
-    public final static String SP_LIFETIME_ROUNDS = "lifetime_rounds";
-    public final static String SP_LIFETIME_LOSSES = "lifetime_losses";
-    public final static String SP_LIFETIME_PADDLE_HITS = "lifetime_paddle_hits";
+    // SQLite
+    public final static String SQLITE_TABLE = "Highscore";
+    public final static String SQLITE_FIELD_NAME = "name";
+    public final static String SQLITE_FIELD_TIME = "time";
 
     /*
      * Private constructor for the class

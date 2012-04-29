@@ -15,28 +15,24 @@
 package com.ninetwozero.assignment4.datatypes;
 
 import java.io.Serializable;
-import java.util.List;
 
 import android.graphics.Paint;
-import android.util.Log;
-
-import com.ninetwozero.assignment4.misc.Constants;
 
 public class Ball implements Serializable {
 
     // Constants
     public static final int DEFAULT_RADIUS = 10;
-    
-    public static final double DEFAULT_SPEED_X = 3.0;
-    public static final double DEFAULT_SPEED_Y = 3.0;
-    
+
+    public static final double DEFAULT_SPEED_X = 1.0;
+    public static final double DEFAULT_SPEED_Y = 1.0;
+
     public static final int DIRECTION_START = -1;
     public static final int DIRECTION_UP = 0;
     public static final int DIRECTION_RIGHT = 1;
     public static final int DIRECTION_DOWN = 2;
     public static final int DIRECTION_LEFT = 3;
     public static final int DIRECTION_NONE = 4;
-    
+
     public static final int TYPE_BLACK = 0;
     public static final int TYPE_GREEN = 1;
     public static final int TYPE_RED = 2;
@@ -48,11 +44,11 @@ public class Ball implements Serializable {
     public static final Paint PAINT_RED = new Paint();
     public static final Paint PAINT_BLUE = new Paint();
     public static final Paint PAINT_YELLOW = new Paint();
-    
+
     private static final long serialVersionUID = 4943234950875259202L;
-    
+
     // Attributes
-    private int radius, type, positionX, positionY;
+    private int radius, type, positionX, positionY, size;
     private int directionX, directionY;
     private double speedX, speedY;
     private boolean enabled;
@@ -67,40 +63,45 @@ public class Ball implements Serializable {
         // The direction
         directionX = (Math.random() < 0.5) ? Ball.DIRECTION_LEFT : Ball.DIRECTION_RIGHT;
         directionY = (Math.random() < 0.5) ? Ball.DIRECTION_UP : Ball.DIRECTION_DOWN;
-        
+
         // Position
         positionX = x;
         positionY = y;
-        
+
         // Type
         type = t;
-        
+
         // Radius
         radius = DEFAULT_RADIUS;
-        
+
         // The speed
         speedX = DEFAULT_SPEED_X;
         speedY = DEFAULT_SPEED_Y;
+
+        // Enabled
+        enabled = true;
+        size = 1;
 
     }
 
     // Getters
     /*
      * Method to return the x position for the ball
-     * @returns int  x position for the ball
+     * @returns int x position for the ball
      */
-    
+
     public int getPositionX() {
-        
+
         return positionX;
     }
+
     /*
      * Method to return the y position for the ball
      * @returns int y position for the ball
      */
-    
+
     public int getPositionY() {
-        
+
         return positionY;
     }
 
@@ -110,7 +111,7 @@ public class Ball implements Serializable {
      */
 
     public int getRadius() {
-        
+
         return radius;
     }
 
@@ -118,9 +119,9 @@ public class Ball implements Serializable {
      * Method to return the type of the ball
      * @returns int Type corresponding to TYPE_*
      */
-    
+
     public int getType() {
-        
+
         return type;
     }
 
@@ -156,40 +157,59 @@ public class Ball implements Serializable {
         return speedX;
     }
 
-    
     /*
-     * Method to return the balls x
-     * @returns int x of the ball
+     * Method to return whether or not the ball is enabled
+     * @return boolean True/false if it's enabled
      */
-    
+
+    public boolean isEnabled() {
+
+        return enabled;
+
+    }
+
+    /*
+     * Method to return the number of merges this ball "has"
+     * @returns int Number of merges
+     */
+
+    public int getSize() {
+
+        return size;
+    }
+
+    /*
+     * Method to set the balls x
+     * @param int x of the ball
+     */
+
     public void setPositionX(int x) {
-        
+
         positionX = x;
-        
+
     }
-    
+
     /*
-     * Method to return the balls x
-     * @returns int x of the ball
+     * Method to set the balls Y
+     * @param int y of the ball
      */
-    
+
     public void setPositionY(int y) {
-        
+
         positionY = y;
-        
+
     }
-   
+
     /*
      * Method to set the radius
      * @returns int radius the ball
      */
-    
+
     public void setRadius(int r) {
-        
+
         radius = r;
-        
+
     }
-   
 
     /*
      * Method to set the direction on the X-axis
@@ -235,6 +255,17 @@ public class Ball implements Serializable {
 
     }
 
+    /*
+     * Method to set the number of merged balls this i
+     * @param int Number of balls this ball is merged of
+     */
+
+    public void setSize(int n) {
+
+        size = n;
+
+    }
+
     // Misc methods
     /*
      * Method to toggle the direction on the X-axis
@@ -254,64 +285,64 @@ public class Ball implements Serializable {
         directionY = (directionY == DIRECTION_UP) ? DIRECTION_DOWN : DIRECTION_UP;
 
     }
-    
-    /* 
-     * Method to get the paint 
+
+    /*
+     * Method to get the paint
      */
     public Paint getPaint() {
-        
-        switch( type ) {
+
+        switch (type) {
 
             case TYPE_BLACK:
                 return PAINT_BLACK;
-                
+
             case TYPE_BLUE:
                 return PAINT_BLUE;
-            
+
             case TYPE_RED:
                 return PAINT_RED;
-            
+
             case TYPE_GREEN:
                 return PAINT_GREEN;
-            
+
             case TYPE_YELLOW:
                 return PAINT_YELLOW;
-            
+
             default:
                 return PAINT_BLACK;
-            
+
         }
-        
+
     }
+
     /*
      * Method to actually move the ball
      */
-    public void move(int xMax, int yMax) {
-        
-        // We have a slight chance of changing direction
+    public void move(int xMin, int yMin, int xMax, int yMax) {
+
         // Let's see what's up on the vertical axel
         if (directionX == DIRECTION_LEFT) {
 
-            if( ( (positionX-radius) - speedX ) < 0 ) {
-                
-                positionX = (int) -((positionX-radius)- speedX );
+            if (((positionX - radius) - speedX) < xMin) {
+
+                positionX = (int) -((positionX - radius) - speedX);
                 directionX = DIRECTION_RIGHT;
-                
+
             } else {
-                
+
                 positionX -= speedX;
 
             }
-            
+
         } else {
- 
-            if( ((positionX+radius) + speedX ) > xMax ) {
-                
-                positionX = (int) ((xMax * 2) - (positionX+radius + speedX ));
+
+            if (((positionX + radius) + speedX) > xMax) {
+
+                positionX = (int) ((xMax * 2) - (positionX + radius + speedX));
                 directionX = DIRECTION_LEFT;
-           
+
             } else {
-                
+
                 positionX += speedX;
 
             }
@@ -320,70 +351,31 @@ public class Ball implements Serializable {
         // Let's see what's up on the horizontal axel
         if (directionY == DIRECTION_UP) {
 
-            if( ( (positionY-radius) - speedY ) < 0 ) {
-                
-                positionY = (int) -((positionY-radius)- speedY );
+            if (((positionY - radius) - speedY) < yMin) {
+
+                positionY = (int) -((positionY - radius) - speedY);
                 directionY = DIRECTION_DOWN;
-                
+
             } else {
-                
+
                 positionY -= speedY;
-           
+
             }
 
         } else {
 
-            if( ((positionY+radius) + speedY ) > yMax ) {
-                
-                positionY = (int) ((yMax * 2) - (positionY+radius + speedY ));
+            if (((positionY + radius) + speedY) > yMax) {
+
+                positionY = (int) ((yMax * 2) - (positionY + radius + speedY));
                 directionY = DIRECTION_UP;
-            
+
             } else {
 
                 positionY += speedY;
 
             }
         }
-        
-    }
-    
-    /* 
-     * Method to check for intersections versus a List of LineData
-     * @param List<LineData> List of Lines to compare to
-     * @return int Number of intersections
-     */
-    
-    public int isIntersecting(List<LineData> lines) {
-        
-        // Init
-        int counter = 0;
-        
-        //Iterate over the lines
-        for( LineData l : lines ) {
 
-            if( l.getStartX() > l.getEndX() ) {
-            
-                if( positionX <= l.getEndX() && positionX >= l.getStartX() ) {
-                    
-                    counter++;
-                    
-                }
-                
-            } else {
-                
-                if( positionX <= l.getStartX() && positionX >= l.getEndX() ) {
-                    
-                    counter++;
-                    
-                }
-                
-            }
-            
-        }
-        
-        // Return the counter
-        return counter;
-        
     }
 
     /*
@@ -394,7 +386,7 @@ public class Ball implements Serializable {
 
         return positionX + "," + positionY;
     }
-    
+
     static {
 
         PAINT_BLACK.setARGB(255, 0, 0, 0);
@@ -402,6 +394,6 @@ public class Ball implements Serializable {
         PAINT_RED.setARGB(255, 255, 0, 255);
         PAINT_YELLOW.setARGB(255, 255, 255, 0);
         PAINT_GREEN.setARGB(255, 0, 255, 0);
-        
+
     }
 }

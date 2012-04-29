@@ -14,20 +14,18 @@
 -->
 
 <resources>
-	<string name="app_name">Spheres</string>
-    <string name="mode_ready">Spheres\nTouch to Play</string>
+	<string name="app_name">MergeMania</string>
+    <string name="mode_ready">MergeMania\nTouch to Play</string>
 	<string name="mode_pause">Paused\nTouch to Resume</string>
-	<string name="mode_lose">Game Over\nTouch to play</string>
 	
 	<string name="message_stopped">Stopped</string>
 
-    <string name="info_top_lives">{num} lives left</string> 
 
-    <string name="info_top_score">Score: {score}</string> 
+    <string name="info_top_time">{time} seconds</string> 
 
-    <string name="info_gameover">Game over!</string> 
+    <string name="info_gameover">...TIME!</string> 
 
-    <string name="info_gameover_restart">Tap to restart</string> 
+    <string name="info_gameover_restart">Tap here twice to restart</string> 
 
     <string name="info_main_start">Start game</string>
 </resources>
